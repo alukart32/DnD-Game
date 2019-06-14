@@ -1,26 +1,18 @@
 package com.r2d2.dnd.model.skill;
 
-import com.r2d2.dnd.game.dto.CharacterDTO;
-import com.r2d2.dnd.game.dto.ResponseDTO;
-
-import java.util.Optional;
+import com.r2d2.dnd.game.Player;
+import com.r2d2.dnd.game.dto.SkillCastDTO;
 
 public class SkillCastElf implements SkillCastBehavior {
-    public ResponseDTO cast(CharacterDTO player, CharacterDTO playerTwo) {
-        ResponseDTO response = new ResponseDTO();
-        // если второй игрок на следующем уровне
-        if(playerTwo.getLvl()+1 == player.getLvl()){
-            int tmpLvl = playerTwo.getLvl();
-            playerTwo.setLvl(player.getLvl());
-            player.setLvl(tmpLvl);
+    public SkillCastDTO cast(Player player, Player other) {
+        SkillCastDTO response = new SkillCastDTO();
 
-            response.setPlayerTwo(Optional.of(playerTwo));
+        player.setLvl(player.getLvl()+3);
 
-        }else {
-            player.setLvl(player.getLvl()+1);
-        }
-        response.setPlayer(Optional.of(player));
+        response.setPlayer(player);
+        response.setOther(null);
 
+        response.setSideEffect(SkillSideEffect.SUPER_LVL_DOWN);
         return response;
     }
 }

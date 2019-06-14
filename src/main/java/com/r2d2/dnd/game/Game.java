@@ -12,7 +12,6 @@ import com.r2d2.dnd.model.skill.SkillCastMage;
 import com.r2d2.dnd.repository.GameEventsRepository;
 import com.r2d2.dnd.repository.GameSessionRepository;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 
 import java.util.Scanner;
@@ -70,7 +69,7 @@ public class Game {
                       playerOne = new Player();
                       playerTwo = new Player();
 
-                     if((Math.random()*2)%2 == 0) {
+                     if((Math.random()*4)%2 == 0) {
                         setCharactersInOrder(characterOne, characterTwo);
                      }else{
                          setCharactersInOrder(characterTwo, characterOne);
@@ -141,7 +140,7 @@ public class Game {
     private Player setPlayer(Character character){
         Player p = new Player();
         p.setCharacter(character);
-        p.setCurrStamina(character.getMaxStamina());
+        p.setCurrentStamina(character.getMaxStamina());
         p.setLvl(0);
         return p;
     }

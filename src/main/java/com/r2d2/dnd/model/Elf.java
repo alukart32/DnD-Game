@@ -7,6 +7,6 @@ public class Elf extends Character {
     public Elf(int maxStamina, int fastTravelStamina,
                int skillStamina, SkillCastBehavior skillCastBehavior) {
         super(maxStamina, fastTravelStamina, skillStamina, skillCastBehavior);
-        this.race = "elf";
+        this.setRace("elf");
     }
 }

@@ -7,6 +7,6 @@ public class Gnome extends Character {
     public Gnome(int maxStamina, int fastTravelStamina,
                  int skillStamina, SkillCastBehavior skillCastBehavior) {
         super(maxStamina, fastTravelStamina, skillStamina, skillCastBehavior);
-        this.race = "gnome";
+        this.setRace("gnome");
     }
 }

@@ -1,8 +1,10 @@
 package com.r2d2.dnd.game.logic;
 
 import com.r2d2.dnd.game.Player;
+import com.r2d2.dnd.game.dto.SkillCastDTO;
 import com.r2d2.dnd.game.events.Event;
 import com.r2d2.dnd.game.session.GameSession;
+import com.r2d2.dnd.model.skill.SkillSideEffect;
 import com.r2d2.dnd.repository.GameEventsRepository;
 import com.r2d2.dnd.repository.GameSessionRepository;
 import org.springframework.stereotype.Service;
@@ -59,23 +61,25 @@ public class GameEngine {
         while (!getFinish){
             System.out.println("Move: " + move);
 
-            System.out.println("---PlayerOne take your move---");
+            System.out.println("\n---PlayerOne take your move---");
+            System.out.println("And " + playerOne.getRace() + " takes a move");
             printCharacterStat(playerOne);
 
-            printActionMenu();
+            printActionMenu(playerOne);
             /**
              * Если первый игрок не дошёл до 20-го уровня
              * второй игрок может совершать действия, иначе незачем ходить
              */
-            getFinish = takeMove(playerOne, "playerOne");
+            getFinish = takeMove(playerOne, true);
 
             if(!getFinish) {
                 System.out.println();
                 System.out.println("---PlayerTwo take your move---");
+                System.out.println("And " + playerTwo.getRace() + " takes a move");
                 printCharacterStat(playerTwo);
 
-                printActionMenu();
-                getFinish = takeMove(playerTwo,"playerTwo");
+                printActionMenu(playerTwo);
+                getFinish = takeMove(playerTwo,false);
 
                 System.out.println();
             }
@@ -90,11 +94,46 @@ public class GameEngine {
     /**
      * Ход игрока
      */
-    private boolean takeMove(Player player, String playerOrder){
+    private boolean takeMove(Player player, boolean playerOrder){
         int action = getAction();
-        step(action, player);
 
-        setEvent(action, player, playerOrder);
+        switch (player.getOtherSkillBuff()){
+            case YOU_SHALL_NOT_PASS:
+                if(action == 1)
+                    step(action, player);
+                break;
+            case WITHOUT:
+            case CHANGE_POS:
+            case SUPER_LVL_DOWN:
+                if(action != 4) {
+                    step(action, player);
+                }
+                else{
+                    SkillCastDTO skillCastDTO = null;
+                    if(playerOrder) {
+                        skillCastDTO = castSkill(player, playerTwo);
+                        if (player.getRace().equals("mage"))
+                            playerTwo.setLvl(skillCastDTO.getOther().getLvl());
+                            playerTwo.setOtherSkillBuff(skillCastDTO.getOther().getOtherSkillBuff());
+                    }
+                    else {
+                        skillCastDTO = castSkill(player, playerOne);
+                        if (player.getRace().equals("mage"))
+                            playerOne.setLvl(skillCastDTO.getOther().getLvl());
+                            playerTwo.setOtherSkillBuff(skillCastDTO.getOther().getOtherSkillBuff());
+                    }
+                }
+                break;
+        }
+        player.setOtherSkillBuff(SkillSideEffect.WITHOUT);
+
+        String msgPlayer = null;
+        if(playerOrder)
+            msgPlayer = "playerOne";
+        else
+            msgPlayer = "playerTwo";
+
+        setEvent(action, player, msgPlayer);
 
         if(playerOne.getLvl() >= endLvl)
             return true;
@@ -117,17 +156,20 @@ public class GameEngine {
                 player.rest();
                 break;
             case 2:
-                player.down();
+                if(player.getCurrentStamina() >= 5)
+                    player.down();
                 break;
             case 3:
-                player.fastTravel();
-                break;
-            case 4:
-               // player.skill();
+                if(player.getCurrentStamina() >= player.getFastDownStamina())
+                    player.fastTravel();
                 break;
         }
 
-        player.setCurrStamina(player.getCurrStamina()+2);
+        if(player.getCurrentStamina() + 2 <= player.getMaxStamina())
+            player.setCurrentStamina(player.getCurrentStamina()+2);
+
+        if(player.getCurrentStamina() > player.getMaxStamina())
+            player.setCurrentStamina(player.getMaxStamina());
     }
 
     private void printHelloMsg(){
@@ -140,19 +182,19 @@ public class GameEngine {
         System.out.println();
     }
 
-    private void printActionMenu(){
+    private void printActionMenu(Player p){
         System.out.println();
         System.out.println("*****Action menu*****");
-        System.out.println("1 - to rest");
-        System.out.println("2 - to go down");
-        System.out.println("3 - to go fast down");
-        System.out.println("4 - to use the skill");
+        System.out.println("1 - to rest ( 0 )");
+        System.out.println("2 - to go down ( 5 )");
+        System.out.println("3 - to go fast down ( "+p.getFastDownStamina()+" )");
+        System.out.println("4 - to use the skill ( "+p.getSkillStamina()+" )");
         System.out.println("Enter action: ");
     }
 
     private void printCharacterStat(Player p){
         System.out.println();
-        System.out.println("lvl: " + p.getLvl() +"\t" + "stamina: " + p.getCurrStamina());
+        System.out.println("lvl: " + p.getLvl() +"\t" + "stamina: " + p.getCurrentStamina());
     }
 
     private int getAction(){
@@ -174,7 +216,7 @@ public class GameEngine {
                 option = "fast down";
                 break;
             case 4:
-                option = "skill";
+                option = p.getSkillBuff().toString();
                 break;
         }
 
@@ -182,10 +224,24 @@ public class GameEngine {
         e.setMove(move);
         e.setAction(option);
         e.setLvl(p.getLvl());
-        e.setStamina(p.getCurrStamina());
+        e.setStamina(p.getCurrentStamina());
         e.setPlayer(playerOrder);
 
         gameSessionRepository.save(gameSession.addEvent(e));
         gameEventsRepository.save(e);
+    }
+
+    private SkillCastDTO castSkill(Player player, Player other){
+        SkillCastDTO skillCastDTO = player.skill(other);
+
+        if(player.getRace().equals("mage")){
+            other.setLvl(skillCastDTO.getOther().getLvl());
+        }
+        other.setOtherSkillBuff(player.getSkillBuff());
+
+        skillCastDTO.setPlayer(player);
+        skillCastDTO.setOther(other);
+
+        return skillCastDTO;
     }
 }

@@ -6,6 +6,6 @@ public class Mage extends Character {
     public Mage(int maxStamina, int fastTravelStamina,
                 int skillStamina, SkillCastBehavior skillCastBehavior) {
         super(maxStamina, fastTravelStamina, skillStamina, skillCastBehavior);
-        this.race = "mage";
+        this.setRace("mage");
     }
 }

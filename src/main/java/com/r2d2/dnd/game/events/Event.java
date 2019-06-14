@@ -1,6 +1,5 @@
 package com.r2d2.dnd.game.events;
 
-import com.r2d2.dnd.game.dto.CharacterDTO;
 import com.r2d2.dnd.game.session.GameSession;
 import lombok.Data;
 import lombok.EqualsAndHashCode;

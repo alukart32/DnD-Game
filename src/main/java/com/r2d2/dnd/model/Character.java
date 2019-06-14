@@ -15,13 +15,13 @@ import lombok.Setter;
 @Setter
 public abstract class Character {
     // раса персонажа
-    public String race;
+    private String race;
     // max выносливость ( 30 <= s <= 50)
-    public int maxStamina;
+    private int maxStamina;
     // трата выносливости на "быстрый спуск"
-    public int fastTravelStamina;
+    private int fastTravelStamina;
     // трата выносливости на использовании уникального скила
-    public int skillStamina;
+    private int skillStamina;
 
     SkillCastBehavior skillCastBehavior;
 

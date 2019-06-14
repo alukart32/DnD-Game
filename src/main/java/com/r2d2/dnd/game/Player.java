@@ -1,13 +1,13 @@
 package com.r2d2.dnd.game;
 
-import com.r2d2.dnd.game.dto.CharacterDTO;
-import com.r2d2.dnd.game.dto.ResponseDTO;
+import com.r2d2.dnd.game.dto.SkillCastDTO;
 import com.r2d2.dnd.model.Character;
+import com.r2d2.dnd.model.skill.SkillSideEffect;
 import org.springframework.stereotype.Component;
 
 /**
  * Представляет собой "состояние" игрока во время игры.
- * Хранить character(тип персонажа), lvl, action (что сделал на ходе), currStamina (текущая выносливость)
+ * Хранить character(тип персонажа), lvl, action (что сделал на ходе), currentStamina (текущая выносливость)
  */
 @Component
 public class Player {
@@ -16,20 +16,25 @@ public class Player {
     // текущий уровень
     private int lvl = 1;
     // текущая выносливость
-    private int currStamina;
+    private int currentStamina;
+
+    // текущий эффект skill у персонажа
+    private SkillSideEffect skillBuff = SkillSideEffect.WITHOUT;
+    // оказывающий эффект skill другого персонажа
+    private SkillSideEffect otherSkillBuff = SkillSideEffect.WITHOUT;
 
     /**
      * Отдых - отнимает 0 выносливости.
      * Эффект - восстанавливает 3 ед./энергии
      */
-    public void rest(){ currStamina+=3;}
+    public void rest(){ currentStamina +=3;}
 
     /**
      * Спуск - отнимает 5 выносливости.
      * Эффект - на этаж вниз
      */
     public void down(){
-        currStamina-=5;
+        currentStamina -=5;
         lvl++;
     }
 
@@ -38,22 +43,37 @@ public class Player {
      * Эффект - на 2 этажа вниз
      */
     public void fastTravel(){
-        currStamina-=this.character.getFastTravelStamina();
+        currentStamina -=this.character.getFastTravelStamina();
         lvl+=2;
     }
 
     /**
      * Особое действие за Y выносливости
      */
-    public ResponseDTO skill(CharacterDTO playerTwo){
-        character.maxStamina-=this.character.skillStamina;
+    public SkillCastDTO skill(Player other){
 
-        CharacterDTO player = new CharacterDTO();
-        player.setLvl(lvl);
-        player.setRace(character.getRace());
+        currentStamina -= this.character.getSkillStamina();
 
-        return character.getSkillCastBehavior().cast(player, playerTwo);
+        SkillCastDTO skillCastDTO = character.getSkillCastBehavior().cast(this, other);
+        lvl = skillCastDTO.getPlayer().getLvl();
+        skillBuff = skillCastDTO.getSideEffect();
+
+        return skillCastDTO;
     }
+
+    public SkillSideEffect getSkillBuff() { return skillBuff; }
+
+    public void setSkillBuff(SkillSideEffect skillBuff) { this.skillBuff = skillBuff; }
+
+    public SkillSideEffect getOtherSkillBuff() { return otherSkillBuff; }
+
+    public int getMaxStamina(){ return character.getMaxStamina();}
+
+    public int getFastDownStamina(){return character.getFastTravelStamina();}
+
+    public int getSkillStamina(){return character.getSkillStamina();}
+
+    public void setOtherSkillBuff(SkillSideEffect otherSkillBuff) { this.otherSkillBuff = otherSkillBuff; }
 
     public int getLvl() {
         return lvl;
@@ -63,17 +83,15 @@ public class Player {
         this.lvl = lvl;
     }
 
-    public int getCurrStamina() {
-        return currStamina;
+    public int getCurrentStamina() {
+        return currentStamina;
     }
 
-    public void setCurrStamina(int currStamina) {
-        this.currStamina = currStamina;
+    public void setCurrentStamina(int currStamina) {
+        this.currentStamina = currStamina;
     }
 
-    public String getRace(){
-        return  character.getRace();
-    }
+    public String getRace(){ return  character.getRace(); }
 
     public void setCharacter(Character character) {
         this.character = character;
