@@ -9,20 +9,28 @@ import com.r2d2.dnd.model.Mage;
 import com.r2d2.dnd.model.skill.SkillCastElf;
 import com.r2d2.dnd.model.skill.SkillCastGnome;
 import com.r2d2.dnd.model.skill.SkillCastMage;
+import com.r2d2.dnd.repository.GameSessionRepository;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Component;
+import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.stereotype.Service;
 
 import java.util.Scanner;
 
 /**
  * Стартовая точка игры
  */
-@Component
+@Service
 public class Game {
     @Autowired
     GameEngine engine;
 
-    Scanner s = new Scanner(System.in);
+    @Autowired
+    GameSessionRepository gameSessionRepository;
+
+    Player playerOne;
+    Player playerTwo;
+
+    private Scanner s = new Scanner(System.in);
 
     public void startGame(){
         printHelloMsg();
@@ -54,27 +62,22 @@ public class Game {
                      * чётное число - первый игрок
                      * нечётное число - второй игрок
                      */
-                      Player playerOne = new Player();
-                      Player playerTwo = new Player();
+                      playerOne = new Player();
+                      playerTwo = new Player();
 
-                     if(Math.random()%2 == 0) {
-                         playerOne.setCharacter(characterOne);
-                         playerTwo.setCharacter(characterTwo);
+                     if((Math.random()*2)%2 == 0) {
+                        setCharactersInOrder(characterOne, characterTwo);
                      }else{
-                         playerOne.setCharacter(characterTwo);
-                         playerTwo.setCharacter(characterOne);
+                         setCharactersInOrder(characterTwo, characterOne);
                      }
-
-                    System.out.println(playerOne.getRace() + "vs" + playerTwo.getRace());
 
                      // старт игры
                      GameSession gameSession = new GameSession();
                      gameSession.setPlayerOne(playerOne.getRace());
                      gameSession.setPlayerTwo(playerTwo.getRace());
 
-                     engine = new GameEngine(gameSession, playerOne, playerTwo);
-                    // engine.runGame();
-
+                     engine = new GameEngine(gameSessionRepository,gameSession, playerOne, playerTwo);
+                     engine.runGame();
                     break;
                 case 2:
                     break;
@@ -135,5 +138,12 @@ public class Game {
         p.setCurrStamina(character.getMaxStamina());
         p.setLvl(0);
         return p;
+    }
+
+    private void setCharactersInOrder(Character characterOne, Character characterTwo){
+        playerOne = setPlayer(characterOne);
+        System.out.println("First player: " + playerOne.getRace());
+        playerTwo = setPlayer(characterTwo);
+        System.out.println("Second player: " + playerTwo.getRace());
     }
 }

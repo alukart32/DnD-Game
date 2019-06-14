@@ -11,7 +11,6 @@ import java.util.Set;
 
 @Data
 @Entity
-@Component
 public class GameSession {
     @Id
     @GeneratedValue(strategy = GenerationType.SEQUENCE)

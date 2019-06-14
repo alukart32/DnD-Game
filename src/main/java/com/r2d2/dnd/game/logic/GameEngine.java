@@ -3,18 +3,24 @@ package com.r2d2.dnd.game.logic;
 import com.r2d2.dnd.game.Player;
 import com.r2d2.dnd.game.events.Event;
 import com.r2d2.dnd.game.session.GameSession;
-import org.springframework.stereotype.Component;
+import com.r2d2.dnd.repository.GameSessionRepository;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
 
 import java.util.Scanner;
 
 /**
  * Ядро игры
  */
-@Component
+@Service
 public class GameEngine {
+
+
+    private GameSessionRepository gameSessionRepository;
 
     // текущая сессия игры
     private GameSession gameSession;
+
     // события текущей сессии
     private Event events;
 
@@ -23,7 +29,11 @@ public class GameEngine {
 
     private Scanner s = new Scanner(System.in);
 
-    public GameEngine(GameSession gameSession, Player playerOne, Player playerTwo) {
+    public GameEngine() {}
+
+    public GameEngine(GameSessionRepository gameSessionRepository, GameSession gameSession,
+                      Player playerOne, Player playerTwo) {
+        this.gameSessionRepository = gameSessionRepository;
         this.gameSession = gameSession;
         this.playerOne = playerOne;
         this.playerTwo = playerTwo;
@@ -34,21 +44,46 @@ public class GameEngine {
      * Порядок игроков: playerOne, playerTwo (за каким какой игрок определяется при создании gameSession)
      */
     public void runGame(){
+        gameSessionRepository.save(gameSession);
+
         printHelloMsg();
 
         // первый кто дойдёт до 20-го уровня
-        boolean winner = false;
+        boolean getFinish = false;
+        // кол-во ходов игры
+        int move = 0;
 
-        while (!winner){
+        while (!getFinish){
+            System.out.println("Move: " + move);
+
+            System.out.println("---PlayerOne take your move---");
+            printCharacterStat(playerOne);
+
             printActionMenu();
             /**
              * Если первый игрок не дошёл до 20-го уровня
              * второй игрок может совершать действия, иначе незачем ходить
              */
-            winner = takeMove(playerOne);
-            if(!winner)
-                winner = takeMove(playerTwo);
+            getFinish = takeMove(playerOne);
+            printCharacterStat(playerOne);
+
+            if(!getFinish) {
+                System.out.println();
+                System.out.println("---PlayerTwo take your move---");
+                printCharacterStat(playerTwo);
+
+                printActionMenu();
+                getFinish = takeMove(playerTwo);
+                printCharacterStat(playerTwo);
+
+                System.out.println();
+            }
+            move++;
         }
+        if(playerOne.getLvl() >= 20)
+            System.out.println("PlayerOne is winner");
+        else
+            System.out.println("PlayerTwo is winner");
     }
 
     /**
@@ -92,19 +127,28 @@ public class GameEngine {
     }
 
     private void printHelloMsg(){
+        System.out.println();
         System.out.println("****DnD Match****");
+        System.out.println();
         System.out.println(playerOne.getRace() + " vs " + playerTwo.getRace());
+        System.out.println();
         System.out.println("****FIGHT*****");
         System.out.println();
     }
 
     private void printActionMenu(){
+        System.out.println();
         System.out.println("*****Action menu*****");
         System.out.println("1 - to rest");
         System.out.println("2 - to go down");
         System.out.println("3 - to go fast down");
         System.out.println("4 - to use the skill");
         System.out.println("Enter action: ");
+    }
+
+    private void printCharacterStat(Player p){
+        System.out.println();
+        System.out.println("lvl: " + p.getLvl() +"\t" + "stamina: " + p.getCurrStamina());
     }
 
     private int getAction(){
