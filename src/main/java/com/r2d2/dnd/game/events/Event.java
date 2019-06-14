@@ -22,6 +22,14 @@ public class Event {
     @ManyToOne
     GameSession gameSession;
 
-    @Length(max = 1)
-    private char player;
+    @Length(max = 20)
+    private String player;
+
+    private int move;
+
+    private int lvl;
+
+    private int stamina;
+
+    private String action;
 }

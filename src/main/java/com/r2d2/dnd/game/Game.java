@@ -9,6 +9,7 @@ import com.r2d2.dnd.model.Mage;
 import com.r2d2.dnd.model.skill.SkillCastElf;
 import com.r2d2.dnd.model.skill.SkillCastGnome;
 import com.r2d2.dnd.model.skill.SkillCastMage;
+import com.r2d2.dnd.repository.GameEventsRepository;
 import com.r2d2.dnd.repository.GameSessionRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -21,14 +22,18 @@ import java.util.Scanner;
  */
 @Service
 public class Game {
+
     @Autowired
     GameEngine engine;
 
     @Autowired
     GameSessionRepository gameSessionRepository;
 
-    Player playerOne;
-    Player playerTwo;
+    @Autowired
+    GameEventsRepository gameEventsRepository;
+
+    private Player playerOne;
+    private Player playerTwo;
 
     private Scanner s = new Scanner(System.in);
 
@@ -76,7 +81,8 @@ public class Game {
                      gameSession.setPlayerOne(playerOne.getRace());
                      gameSession.setPlayerTwo(playerTwo.getRace());
 
-                     engine = new GameEngine(gameSessionRepository,gameSession, playerOne, playerTwo);
+                     engine = new GameEngine(gameEventsRepository,gameSessionRepository,
+                             gameSession, playerOne, playerTwo);
                      engine.runGame();
                     break;
                 case 2:

@@ -3,8 +3,8 @@ package com.r2d2.dnd.game.logic;
 import com.r2d2.dnd.game.Player;
 import com.r2d2.dnd.game.events.Event;
 import com.r2d2.dnd.game.session.GameSession;
+import com.r2d2.dnd.repository.GameEventsRepository;
 import com.r2d2.dnd.repository.GameSessionRepository;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.util.Scanner;
@@ -15,24 +15,29 @@ import java.util.Scanner;
 @Service
 public class GameEngine {
 
+    private GameEventsRepository gameEventsRepository;
 
     private GameSessionRepository gameSessionRepository;
 
     // текущая сессия игры
     private GameSession gameSession;
 
-    // события текущей сессии
-    private Event events;
-
     private Player playerOne;
     private Player playerTwo;
 
     private Scanner s = new Scanner(System.in);
 
+    // текущий ход игры
+    private int move = 0;
+
+    // уровень, который надо достичь
+    private int endLvl = 20;
+
     public GameEngine() {}
 
-    public GameEngine(GameSessionRepository gameSessionRepository, GameSession gameSession,
-                      Player playerOne, Player playerTwo) {
+    public GameEngine(GameEventsRepository gameEventsRepository, GameSessionRepository gameSessionRepository,
+                      GameSession gameSession, Player playerOne, Player playerTwo) {
+        this.gameEventsRepository = gameEventsRepository;
         this.gameSessionRepository = gameSessionRepository;
         this.gameSession = gameSession;
         this.playerOne = playerOne;
@@ -50,8 +55,6 @@ public class GameEngine {
 
         // первый кто дойдёт до 20-го уровня
         boolean getFinish = false;
-        // кол-во ходов игры
-        int move = 0;
 
         while (!getFinish){
             System.out.println("Move: " + move);
@@ -64,8 +67,7 @@ public class GameEngine {
              * Если первый игрок не дошёл до 20-го уровня
              * второй игрок может совершать действия, иначе незачем ходить
              */
-            getFinish = takeMove(playerOne);
-            printCharacterStat(playerOne);
+            getFinish = takeMove(playerOne, "playerOne");
 
             if(!getFinish) {
                 System.out.println();
@@ -73,14 +75,13 @@ public class GameEngine {
                 printCharacterStat(playerTwo);
 
                 printActionMenu();
-                getFinish = takeMove(playerTwo);
-                printCharacterStat(playerTwo);
+                getFinish = takeMove(playerTwo,"playerTwo");
 
                 System.out.println();
             }
             move++;
         }
-        if(playerOne.getLvl() >= 20)
+        if(playerOne.getLvl() >= endLvl)
             System.out.println("PlayerOne is winner");
         else
             System.out.println("PlayerTwo is winner");
@@ -89,10 +90,13 @@ public class GameEngine {
     /**
      * Ход игрока
      */
-    private boolean takeMove(Player player){
-        step(getAction(), player);
+    private boolean takeMove(Player player, String playerOrder){
+        int action = getAction();
+        step(action, player);
 
-        if(playerOne.getLvl() >= 20)
+        setEvent(action, player, playerOrder);
+
+        if(playerOne.getLvl() >= endLvl)
             return true;
         return false;
     }
@@ -153,5 +157,35 @@ public class GameEngine {
 
     private int getAction(){
         return s.nextInt();
+    }
+
+    private void setEvent(int action, Player p, String playerOrder){
+        Event e = new Event();
+
+        String option = null;
+        switch (action){
+            case 1:
+                option = "rest";
+                break;
+            case 2:
+                option = "down";
+                break;
+            case 3:
+                option = "fast down";
+                break;
+            case 4:
+                option = "skill";
+                break;
+        }
+
+        e.setGameSession(gameSession);
+        e.setMove(move);
+        e.setAction(option);
+        e.setLvl(p.getLvl());
+        e.setStamina(p.getCurrStamina());
+        e.setPlayer(playerOrder);
+
+        gameSessionRepository.save(gameSession.addEvent(e));
+        gameEventsRepository.save(e);
     }
 }
