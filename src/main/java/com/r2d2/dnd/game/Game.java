@@ -15,9 +15,7 @@ import com.r2d2.dnd.repository.GameSessionRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import java.util.HashSet;
-import java.util.Scanner;
-import java.util.Set;
+import java.util.*;
 
 /**
  * Стартовая точка игры
@@ -39,6 +37,7 @@ public class Game {
 
     private Scanner s = new Scanner(System.in);
 
+
     public void startGame(){
         printHelloMsg();
 
@@ -46,59 +45,23 @@ public class Game {
 
         while (run){
             printMainMenu();
-            switch (getAction()){
+            switch (getValue()){
                 // начать новую игру
                 case 1:
-                    System.out.println();
-                    /**
-                     * Выбор персонажа для первого игрока
-                     */
-                    System.out.println("Choose your character PlayerOne");
-                    printCharacterMenu();
-                    Character characterOne = getPlayer(getAction());
+                    initGame();
 
-                    System.out.println();
-                    /**
-                     * Выбор персонажа для второго игрока
-                     */
-                    System.out.println("Choose your character PlayerTwo");
-                    printCharacterMenu();
-                    Character characterTwo = getPlayer(getAction());
-                    /**
-                     * Определение порядка игроков
-                     * чётное число - первый игрок
-                     * нечётное число - второй игрок
-                     */
-                      playerOne = new Player();
-                      playerTwo = new Player();
+                    // старт игры
+                    GameSession gameSession = new GameSession();
+                    gameSession.setPlayerOne(playerOne.getRace());
+                    gameSession.setPlayerTwo(playerTwo.getRace());
 
-                     if((Math.random()*4)%2 == 0) {
-                        setCharactersInOrder(characterOne, characterTwo);
-                     }else{
-                         setCharactersInOrder(characterTwo, characterOne);
-                     }
-
-                     // старт игры
-                     GameSession gameSession = new GameSession();
-                     gameSession.setPlayerOne(playerOne.getRace());
-                     gameSession.setPlayerTwo(playerTwo.getRace());
-
-                     engine = new GameEngine(gameEventsRepository,gameSessionRepository,
-                             gameSession, playerOne, playerTwo);
-                     engine.runGame();
+                    engine = new GameEngine(gameEventsRepository,gameSessionRepository,
+                            gameSession, playerOne, playerTwo);
+                    engine.runGame();
                     break;
                 case 2:
-                    long id = 1;
-                    Set<Event> eventSet = new HashSet<>();
-                    gameEventsRepository.findAllByGameSessionId(id).forEach(eventSet::add);
-
-                    System.out.println("Game events");
-
-                    for (Event event : eventSet) {
-                        System.out.println("move: "+event.getMove()+"   player: " + event.getPlayer() +
-                                "   action: "+event.getAction() + "     lvl"+event.getLvl());
-                    }
-
+                    printGameEvents();
+                    System.out.println();
                     break;
                 case 3:
                     run = false;
@@ -130,8 +93,89 @@ public class Game {
         System.out.println("Enter: ");
     }
 
-    private int getAction(){
+    private int getValue(){
         return s.nextInt();
+    }
+
+    /**
+     * Выбор персонажа и определение порядка игроков
+     */
+    private void initGame(){
+
+        System.out.println();
+        /**
+         * Выбор персонажа для первого игрока
+         */
+        System.out.println("Choose your character PlayerOne");
+        printCharacterMenu();
+        Character characterOne = getPlayer(getValue());
+
+        System.out.println();
+        /**
+         * Выбор персонажа для второго игрока
+         */
+        System.out.println("Choose your character PlayerTwo");
+        printCharacterMenu();
+        Character characterTwo = getPlayer(getValue());
+        /**
+         * Определение порядка игроков
+         * чётное число - первый игрок
+         * нечётное число - второй игрок
+         */
+        playerOne = new Player();
+        playerTwo = new Player();
+
+        if((Math.random()*50)%2 == 0) {
+            setCharactersInOrder(characterOne, characterTwo);
+        }else{
+            setCharactersInOrder(characterTwo, characterOne);
+        }
+    }
+
+    /**
+     * Отображение событиев игры по id выбранной gameSession
+     */
+    private void printGameEvents(){
+        System.out.println();
+        System.out.println("***GameSession***");
+
+        Set<GameSession> gameSessions = new TreeSet<>(Game::compareGameSession);
+        Iterable<GameSession> sessions = gameSessionRepository.findAll();
+        sessions.forEach(gameSessions::add);
+
+        if(gameSessions.isEmpty())
+            System.out.println("You haven't played any game!!!");
+        else {
+            for (GameSession session : gameSessions) {
+                System.out.println(session.getId() + "      winner: " + session.getWinner());
+            }
+
+            System.out.println();
+            System.out.println("Enter: ");
+
+            showGameEvents((long) getValue());
+        }
+    }
+
+    /**
+     * Выборка и отображение событиев игры(ходов) относительно gameSession
+     * @param id
+     */
+    private void showGameEvents(Long id){
+        Set<Event> eventSet = new TreeSet<>(Game::compareGameEvent);
+        Iterable<Event> events = gameEventsRepository.findAllByGameSessionId(id);
+        events.forEach(eventSet::add);
+
+        System.out.println();
+        System.out.println("Game events");
+        System.out.println("--------------------------------------------------------------");
+
+        for (Event event : eventSet) {
+            System.out.println( "move: "+event.getMove()+"   player: " + event.getPlayer() +
+                    "   action: "+event.getAction() + "     lvl "+event.getLvl());
+        }
+
+        System.out.println("--------------------------------------------------------------");
     }
 
     private Character getPlayer(int choice){
@@ -151,6 +195,14 @@ public class Game {
         return character;
     }
 
+    /**
+     * Создание "участника игры"
+     *
+     * @param character
+     *                      выбранный персонаж игроком
+     * @return
+     *          участника игры
+     */
     private Player setPlayer(Character character){
         Player p = new Player();
         p.setCharacter(character);
@@ -159,10 +211,46 @@ public class Game {
         return p;
     }
 
+    /**
+     * Установление порядка игроков
+     *
+     * @param characterOne
+     * @param characterTwo
+     */
     private void setCharactersInOrder(Character characterOne, Character characterTwo){
         playerOne = setPlayer(characterOne);
         System.out.println("First player: " + playerOne.getRace());
         playerTwo = setPlayer(characterTwo);
         System.out.println("Second player: " + playerTwo.getRace());
     }
+    /**
+     * Определение метода compare для компаратора при создании TreeSet
+     *
+     * @param o1
+     * @param o2
+     * @return
+     */
+
+    private static int compareGameSession(GameSession o1, GameSession o2) {
+        {
+            if (Objects.equals(o1.getId(), o2.getId()))
+                return 0;
+            else if (o1.getId() < o2.getId())
+                return -1;
+            else
+                return 1;
+        }
+    }
+
+    private static int compareGameEvent(Event e1, Event e2) {
+        {
+            if (Objects.equals(e1.getId(), e2.getId()))
+                return 0;
+            else if (e1.getId() < e2.getId())
+                return -1;
+            else
+                return 1;
+        }
+    }
+
 }

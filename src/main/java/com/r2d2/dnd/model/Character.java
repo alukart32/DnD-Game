@@ -25,8 +25,6 @@ public abstract class Character {
 
     SkillCastBehavior skillCastBehavior;
 
-    public Character() {}
-
     public Character(int maxStamina, int fastTravelStamina,
                      int skillStamina, SkillCastBehavior skillCastBehavior) {
         this.maxStamina = maxStamina;

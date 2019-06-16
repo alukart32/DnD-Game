@@ -63,8 +63,6 @@ public class Player {
 
     public SkillSideEffect getSkillBuff() { return skillBuff; }
 
-    public void setSkillBuff(SkillSideEffect skillBuff) { this.skillBuff = skillBuff; }
-
     public SkillSideEffect getOtherSkillBuff() { return otherSkillBuff; }
 
     public int getMaxStamina(){ return character.getMaxStamina();}

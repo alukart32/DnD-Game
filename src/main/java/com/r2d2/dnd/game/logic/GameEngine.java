@@ -32,7 +32,7 @@ public class GameEngine {
     private int move = 1;
 
     // уровень, который надо достичь
-    private int endLvl = 20;
+    private int endLvl = 20; // = 10
 
     public GameEngine() {}
 
@@ -86,16 +86,19 @@ public class GameEngine {
         }
 
         if(playerOne.getLvl() >= endLvl) {
-            System.out.println("PlayerOne is winner");
+            System.out.println(playerOne.getRace() + " is winner");
+            System.out.println();
             gameSession.setWinner(playerOne.getRace());
         }
         else
             if(playerTwo.getLvl() >= endLvl) {
-                System.out.println("PlayerTwo is winner");
+                System.out.println(playerTwo.getRace() + "PlayerTwo is winner");
+                System.out.println();
                 gameSession.setWinner(playerOne.getRace());
             }
             else {
                 System.out.println("The game was stopped!");
+                System.out.println();
                 gameSession.setWinner("stopped");
             }
             gameSessionRepository.save(gameSession);
@@ -110,11 +113,6 @@ public class GameEngine {
         boolean notEnoughStamina = true;
 
         /**
-         * Если кто-то захотел прервать игру, то будем считать, что "есть" победитель
-         */
-        if(action == 5)
-            return true;
-        /**
          * Исходя из применённого на одного персонажа skill другого и от выбранного действия,
          * совершаем действия персонажа.
          *
@@ -122,13 +120,38 @@ public class GameEngine {
          */
         while (!doneMove) {
             switch (player.getOtherSkillBuff()) {
+                /**
+                 * При YOU_SHALL_NOT_PASS skillBuff игроку остаётся как только и отдыхать (или покинуть игру)
+                 */
                 case YOU_SHALL_NOT_PASS:
-                    if (action == 1)
+                    System.out.println("\nYou have got skillBuff: YOU_SHALL_NOT_PASS !!!");
+                    System.out.println("You can only rest!!!");
+                    if (action == 1) {
                         step(action, player);
+                        doneMove = true;
+                        notEnoughStamina = false;
+                    }else
+                    /**
+                     * Если кто-то захотел прервать игру, то будем считать, что "есть" победитель
+                     */
+                        if(action == 0) {
+                            doneMove = true;
+                            notEnoughStamina = false;
+                        }
                     break;
                 case WITHOUT:
                 case CHANGE_POS:
                 case SUPER_LVL_DOWN:
+                    /**
+                     * Если кто-то захотел прервать игру, то будем считать, что "есть" победитель
+                     */
+                    if(action == 0) {
+                        doneMove = true;
+                        notEnoughStamina = false;
+                    }
+                    /**
+                     * Если игрок не использует skill
+                     */
                     if (action != 4) {
                         if (step(action, player)){
                            doneMove = true;
@@ -149,24 +172,21 @@ public class GameEngine {
                     }
                     break;
             }
-
             if(notEnoughStamina){
                 printActionMenu(player);
                 action = getAction();
             }
         }
-
+        // фиксация события
         setEvent(action, player);
-
+        // освобождение из под эффекта skill другого игрока
         player.setOtherSkillBuff(SkillSideEffect.WITHOUT);
 
-        if(playerOne.getLvl() >= endLvl)
-            return true;
-        return false;
+        return (playerOne.getLvl() >= endLvl) || (action == 0);
     }
 
     /**
-     * Действие, совершаемое персонажем
+     * Действие, совершаемое игроком
      *
      * @param action
      *                  Объект, хранящий информацию о событии игрока. При действии 's' хранит
@@ -224,15 +244,15 @@ public class GameEngine {
         System.out.println("2 - to go down ( 5 )");
         System.out.println("3 - to go fast down ( "+p.getFastDownStamina()+" )");
         System.out.println("4 - to use the skill ( "+p.getSkillStamina()+" )");
-        System.out.println("5 - stop the game");
+        System.out.println("0 - stop the game");
         System.out.println("Enter action: ");
     }
 
     private void printStepAlertMenu(int currStamina, int needMinStamina){
         System.out.println();
-        System.out.println("Not enough stamina!!!");
+        System.out.println("Not enough stamina!!\n");
         System.out.println("Current: " + currStamina + "    " + "Need: " + needMinStamina);
-        System.out.println("Reselect your choice.");
+        System.out.println("\nReselect your choice.");
     }
 
     private void printCharacterStat(Player p){
@@ -244,6 +264,13 @@ public class GameEngine {
         return s.nextInt();
     }
 
+    /**
+     * Фиксация события игры
+     *
+     * @param action
+     *                  какое действие
+     * @param p
+     */
     private void setEvent(int action, Player p){
         Event e = new Event();
 
@@ -280,6 +307,14 @@ public class GameEngine {
         gameEventsRepository.save(e);
     }
 
+    /**
+     * Применение игроком skill
+     *
+     * @param player
+     *                  кто применил
+     * @param other
+     *                  тот, на кого возможен эффект skill
+     */
     private void castSkill(Player player, Player other){
             SkillCastDTO skillCastDTO = player.skill(other);
 

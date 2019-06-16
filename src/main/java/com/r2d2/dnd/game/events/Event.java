@@ -13,9 +13,10 @@ import javax.persistence.*;
 @Data
 @EqualsAndHashCode(exclude = "gameSession")
 @Entity
+@SequenceGenerator(name="events", initialValue=1, allocationSize=1)
 public class Event {
     @Id
-    @GeneratedValue(strategy = GenerationType.SEQUENCE)
+    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "events")
     Long id;
 
     @ManyToOne
