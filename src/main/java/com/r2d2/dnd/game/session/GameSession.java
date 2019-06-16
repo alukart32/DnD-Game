@@ -22,6 +22,8 @@ public class GameSession {
     @Length(max = 10)
     String playerTwo;
 
+    String winner;
+
     @OneToMany(mappedBy = "gameSession", fetch = FetchType.EAGER)
     Set<Event> events = new HashSet<>();
 

@@ -1,5 +1,6 @@
 package com.r2d2.dnd.game;
 
+import com.r2d2.dnd.game.events.Event;
 import com.r2d2.dnd.game.logic.GameEngine;
 import com.r2d2.dnd.game.session.GameSession;
 import com.r2d2.dnd.model.Character;
@@ -14,7 +15,9 @@ import com.r2d2.dnd.repository.GameSessionRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.util.HashSet;
 import java.util.Scanner;
+import java.util.Set;
 
 /**
  * Стартовая точка игры
@@ -85,6 +88,17 @@ public class Game {
                      engine.runGame();
                     break;
                 case 2:
+                    long id = 1;
+                    Set<Event> eventSet = new HashSet<>();
+                    gameEventsRepository.findAllByGameSessionId(id).forEach(eventSet::add);
+
+                    System.out.println("Game events");
+
+                    for (Event event : eventSet) {
+                        System.out.println("move: "+event.getMove()+"   player: " + event.getPlayer() +
+                                "   action: "+event.getAction() + "     lvl"+event.getLvl());
+                    }
+
                     break;
                 case 3:
                     run = false;
